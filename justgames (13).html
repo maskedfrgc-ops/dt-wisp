@@ -2919,8 +2919,27 @@
       if(e.status === 403) return who + " refused the request (check the key's website restriction)";
       return who + ": " + m;
     }
+    /* asks the Render server (same address as this page), which asks the AI. Works on networks that block the AI sites. */
+    var serverOk = true;
+    async function askServer(msgs, system, image){
+      if(!serverOk) return null;
+      var r;
+      try{
+        r = await fetch(new URL("api/ai", location.href).href, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({messages: msgs, system: system, image: image || ""})});
+      }catch(e){ return null; }
+      var j = null;
+      try{ j = await r.json(); }catch(e){}
+      if(!j || (r.status === 404 || r.status === 405)){ serverOk = false; return null; }
+      if(r.status === 503){ serverOk = false; return null; }
+      if(!r.ok){ var er = new Error(j.error || ("error " + r.status)); er.status = r.status; throw er; }
+      return j.reply || null;
+    }
     async function getAnswer(msgs, image, system){
       var problems = [];
+      try{
+        var sv = await askServer(msgs, system, image);
+        if(sv) return sv;
+      }catch(e){ console.error(e); problems.push(friendly(e, "the AI server")); }
       if(GEMINI_KEY){
         try{ return await askGemini(msgs, system, image); }
         catch(e){ console.error(e); problems.push(friendly(e, "Google AI")); }
@@ -3081,7 +3100,7 @@
 
     async function startShare(){
       if(!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)){ setStat("this browser can't share its screen"); return; }
-      if(!GEMINI_KEY && !GROQ_KEY){ setStat("screen reading needs a free AI key (set GROQ_KEY or GEMINI_KEY in the page file)"); return; }
+      if(!GEMINI_KEY && !GROQ_KEY && !serverOk){ setStat("screen reading needs a free AI key (add GROQ_API_KEY on the server)"); return; }
       var s;
       try{
         s = await navigator.mediaDevices.getDisplayMedia({video: {cursor: "always"}, audio: false});
