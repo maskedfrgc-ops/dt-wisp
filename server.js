@@ -187,11 +187,55 @@ async function handleAi(req, res) {
   }
 }
 
+// ---------- game list relay: /gn/<assets|covers|html>/<path> -> jsdelivr (for networks that block the CDN) ----------
+const GN_REPOS = { assets: "freebuisness/assets@main", covers: "freebuisness/covers@main", html: "freebuisness/html@main" };
+const gnCache = new Map(); // small in-memory cache for the game list and html files
+async function handleGn(urlPath, res) {
+  const m = urlPath.match(/^\/gn\/(assets|covers|html)\/([A-Za-z0-9._\-@ %+()\/]+)$/);
+  if (!m || m[2].includes("..")) {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Not found");
+    return;
+  }
+  const target = "https://cdn.jsdelivr.net/gh/" + GN_REPOS[m[1]] + "/" + m[2];
+  const hit = gnCache.get(target);
+  const send = (type, buf, ttl) => {
+    res.writeHead(200, { "Content-Type": type, "Cache-Control": "public, max-age=" + ttl, "Access-Control-Allow-Origin": "*" });
+    res.end(buf);
+  };
+  if (hit && Date.now() - hit.t < 30 * 60 * 1000) return send(hit.type, hit.buf, m[1] === "assets" ? 600 : 86400);
+  try {
+    const r = await fetch(target);
+    if (!r.ok) {
+      res.writeHead(r.status === 404 ? 404 : 502, { "Content-Type": "text/plain" });
+      res.end("upstream " + r.status);
+      return;
+    }
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length > 25 * 1024 * 1024) {
+      res.writeHead(502, { "Content-Type": "text/plain" });
+      res.end("too big");
+      return;
+    }
+    const type = r.headers.get("content-type") || "application/octet-stream";
+    if (m[1] !== "covers" || gnCache.size < 300) gnCache.set(target, { t: Date.now(), type, buf });
+    if (gnCache.size > 600) gnCache.clear();
+    send(type, buf, m[1] === "assets" ? 600 : 86400);
+  } catch (e) {
+    res.writeHead(502, { "Content-Type": "text/plain" });
+    res.end("couldn't reach the game host");
+  }
+}
+
 const server = http.createServer((req, res) => {
   let urlPath = "/";
   try {
     urlPath = decodeURIComponent((req.url || "/").split("?")[0]);
   } catch (e) {}
+  if (urlPath.startsWith("/gn/")) {
+    handleGn(urlPath, res);
+    return;
+  }
   if (urlPath === "/api/ai") {
     handleAi(req, res);
     return;
