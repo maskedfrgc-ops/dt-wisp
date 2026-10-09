@@ -25,10 +25,21 @@ const TYPES = {
   ".wasm": "application/wasm",
 };
 
+// the home page: index.html, justgames.html, or (browsers sometimes add numbers like "justgames (13).html") any .html file
+function homeNames(root) {
+  const names = HOME_NAMES.slice();
+  try {
+    for (const n of fs.readdirSync(root).sort()) {
+      if (/\.html?$/i.test(n) && !names.includes(n)) names.push(n);
+    }
+  } catch (e) {}
+  return names;
+}
+
 function find(urlPath) {
-  const names = urlPath === "/" ? HOME_NAMES : [urlPath];
+  const names = urlPath === "/" ? null : [urlPath];
   for (const root of roots) {
-    for (const name of names) {
+    for (const name of names || homeNames(root)) {
       const file = path.normalize(path.join(root, name));
       if (!file.startsWith(root)) continue;
       const rel = path.relative(here, file).split(path.sep);
@@ -60,7 +71,7 @@ const server = http.createServer((req, res) => {
     res.end(
       urlPath === "/"
         ? "Dark Terminal wisp server is running, but I can't find your site files.\n\n" +
-            "I looked for index.html or justgames.html.\n" +
+            "I looked for index.html, justgames.html, or any .html file.\n" +
             "Files in the public folder: " + list(roots[0]) + "\n" +
             "Files next to server.js: " + list(here) + "\n"
         : "Not found"
