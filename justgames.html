@@ -469,6 +469,57 @@
   body.has-online #appBar{ padding-right:84px; }
   body.has-online .gamesbar{ padding-right:84px; }
   @media (max-width:800px){ body.has-online .authbox{ margin-top:64px; } }
+
+  /* WHO'S ONLINE (click the counter) */
+  #onlinePill{ font:inherit; font-size:15px; cursor:pointer; transition:border-color .15s; }
+  #onlinePill:hover, #onlinePill[aria-expanded="true"]{ border-color:var(--accent); }
+  #onlinePill:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+  #onlinePanel{
+    position:fixed; z-index:45; top:calc(56px + env(safe-area-inset-top,0px)); right:14px;
+    width:min(280px, calc(100vw - 28px)); max-height:min(440px, calc(100dvh - 140px));
+    display:flex; flex-direction:column; overflow:hidden;
+    background:var(--panel); border:1px solid var(--accent); border-radius:14px;
+    box-shadow:0 14px 36px rgba(0,0,0,.55), 0 0 22px rgba(51,255,119,.1); box-shadow:0 14px 36px rgba(0,0,0,.55), 0 0 22px color-mix(in srgb, var(--accent) 12%, transparent);
+    transform-origin:top right; animation:opIn .16s ease-out;
+  }
+  @keyframes opIn{ from{ opacity:0; transform:translateY(-6px) scale(.98); } }
+  .ophead{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:14px 16px 10px; border-bottom:1px solid var(--line); }
+  .ophead b{ font-family:'VT323',ui-monospace,monospace; font-weight:400; font-size:24px; line-height:1; color:var(--accent); }
+  .ophead span{ font-size:12px; color:var(--sub); }
+  #onlineList{ overflow-y:auto; padding:6px; display:flex; flex-direction:column; gap:2px; }
+  .oprow{ display:flex; align-items:center; gap:10px; width:100%; padding:7px 10px; margin:0; border:1px solid transparent; border-radius:10px; background:none; color:var(--ink); font:inherit; font-size:14px; text-align:left; }
+  button.oprow{ cursor:pointer; }
+  button.oprow:hover, button.oprow:focus-visible{ outline:none; border-color:var(--line); background:rgba(51,255,119,.07); background:color-mix(in srgb, var(--accent) 8%, transparent); }
+  .opav{ flex:none; position:relative; width:30px; height:30px; border-radius:50%; background:var(--field) center/cover no-repeat; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; color:var(--accent); font-size:14px; text-transform:uppercase; }
+  .opav.live::after{ content:""; position:absolute; right:-2px; bottom:-2px; width:9px; height:9px; border-radius:50%; background:var(--accent); border:2px solid var(--panel); }
+  .opav svg{ display:block; }
+  .oprow.guest, .oprow.guest .opav{ color:var(--sub); }
+  .opname{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .opyou{ flex:none; color:var(--sub); font-size:12px; }
+  .opat{ flex:none; color:var(--accent); font-size:14px; opacity:0; transition:opacity .15s; }
+  button.oprow:hover .opat, button.oprow:focus-visible .opat{ opacity:1; }
+  .opnote{ padding:9px 16px 12px; font-size:11px; line-height:1.45; color:var(--sub); border-top:1px solid var(--line); }
+
+  /* @MENTIONS */
+  .mtag{ color:var(--accent); }
+  .mtag.me{ padding:0 3px; border-radius:4px; background:rgba(51,255,119,.18); background:color-mix(in srgb, var(--accent) 22%, transparent); }
+  .msg.mentioned{
+    border-color:var(--accent);
+    background:rgba(51,255,119,.07); background:color-mix(in srgb, var(--accent) 8%, var(--field));
+    box-shadow:inset 3px 0 0 var(--accent);
+  }
+  .note.mention{ border-color:var(--accent); box-shadow:0 12px 32px rgba(0,0,0,.55), 0 0 22px rgba(51,255,119,.22); box-shadow:0 12px 32px rgba(0,0,0,.55), 0 0 22px color-mix(in srgb, var(--accent) 30%, transparent); }
+  .note.mention .notewhen{ color:var(--accent); }
+  #mentionBox{
+    position:fixed; z-index:60; display:flex; flex-direction:column; gap:2px; padding:6px; max-height:250px; overflow-y:auto;
+    background:var(--panel); border:1px solid var(--accent); border-radius:12px; box-shadow:0 10px 28px rgba(0,0,0,.5);
+  }
+  .mbhint{ padding:3px 10px 5px; font-size:11px; color:var(--sub); }
+  .mbopt{ display:flex; align-items:center; gap:10px; width:100%; padding:6px 10px; margin:0; border:0; border-radius:8px; background:none; color:var(--ink); font:inherit; font-size:14px; text-align:left; cursor:pointer; }
+  .mbopt .opav{ width:24px; height:24px; font-size:12px; }
+  .mbopt.on{ color:var(--accent); background:rgba(51,255,119,.12); background:color-mix(in srgb, var(--accent) 14%, transparent); }
+  .mbopt .opname{ flex:1; }
+  .mbopt small{ flex:none; font-size:11px; color:var(--sub); }
 </style>
 </head>
 <body>
@@ -562,7 +613,7 @@
     <div class="settingsbox" style="margin-top:28px;">
       <label class="settlabel">Chat notifications</label>
       <button type="button" class="themeselect" id="noteToggle" style="text-align:left;"></button>
-      <div class="setnote">Pops up when someone sends a message and you're not on the Chat tab. You need to be logged in to chat to get them.</div>
+      <div class="setnote">Pops up when someone sends a message and you're not on the Chat tab. You need to be logged in to chat to get them. @mentions always notify you, even when this is off.</div>
     </div>
     <div class="settingsbox" style="margin-top:28px;">
       <label class="settlabel">Browser search engine</label>
@@ -708,10 +759,16 @@
 
 
 
-<div id="onlinePill" role="status" hidden>
+<button type="button" id="onlinePill" aria-haspopup="true" aria-expanded="false" aria-controls="onlinePanel" hidden>
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
   <span id="onlineNum">1</span>
+</button>
+<div id="onlinePanel" hidden>
+  <div class="ophead"><b>Online now</b><span id="onlineHeadCount"></span></div>
+  <div id="onlineList"></div>
+  <div class="opnote">Guests are people who aren't logged in to chat. Click someone to @mention them.</div>
 </div>
+<div id="mentionBox" hidden></div>
 <div id="noteStack" aria-live="polite"></div>
 
 <div class="overlay" id="updateOverlay">
@@ -1184,11 +1241,12 @@
     try{ var u = JSON.parse(localStorage.getItem("dt_current")||"null"); if(u) return u; }catch(e){}
     return memUser;
   }
-  function clearCurrentUser(){ memUser = null; try{ localStorage.removeItem("dt_current"); }catch(e){} }
+  function clearCurrentUser(){ memUser = null; try{ localStorage.removeItem("dt_current"); }catch(e){} onlineNudge(); }
   function setCurrentUser(u){
     memUser = u; memVisited = true;
     try{ localStorage.setItem("dt_current", JSON.stringify(u)); }catch(e){}
     try{ localStorage.setItem("dt_visited", "1"); }catch(e){}
+    onlineNudge();
   }
   function hasVisitedChat(){ if(memVisited) return true; try{ return !!localStorage.getItem("dt_visited"); }catch(e){ return false; } }
 
@@ -1244,6 +1302,7 @@
       var errEl = document.getElementById("authErr");
       errEl.textContent = "";
       if(!uname || !pass){ errEl.textContent = "enter a username and password."; return; }
+      if(signup && /^guest\s*\d*$/i.test(uname)){ errEl.textContent = "that username is saved for guests, pick another one."; return; }
 
       var goBtn = document.getElementById("authGo");
       function finish(){ goBtn.disabled = false; }
@@ -1391,6 +1450,7 @@
       var mine = m.username === user.username;
       var row = document.createElement("div");
       row.className = "msg";
+      if(!mine && mentionsName(m.text, user.username)) row.className += " mentioned";
       row.setAttribute("data-mid", m.id || "");
       row._sig = sigOf(m);
       var quote = "";
@@ -1400,7 +1460,7 @@
       row.innerHTML =
         '<div class="prev" style="'+avatarStyle(m.avatar)+'"></div>' +
         '<div class="content"><div class="who">'+(mine?"you":escapeHtml(m.username))+'</div>'+quote+
-        (m.text ? '<div class="text">'+escapeHtml(m.text)+'</div>' : '') +
+        (m.text ? '<div class="text">'+markMentions(escapeHtml(m.text), user.username)+'</div>' : '') +
         '</div>' +
         '<button class="replybtn" title="reply"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button>';
       var content = row.querySelector(".content");
@@ -1472,7 +1532,6 @@
           if(!fromCache) writeMsgCache(list);
           noteFeed(snap, list, fromCache, user);
         }, function(err){ console.error(err); }));
-        unsubs.push(startTypingWatch(user));
       } else {
         apply(loadMsgs());
       }
@@ -1521,10 +1580,7 @@
         apply(msgs);
       }
     }
-    function setTyping(on){
-      if(!useCloud) return;
-      db.collection("typing").doc(user.username).set({typing: on, n: Date.now()}).catch(function(){});
-    }
+    function setTyping(on){ /* typing now goes through the server, see "typing indicator" near the end */ }
 
     barEl.addEventListener("click", function(e){
       var x = e.target.getAttribute && e.target.getAttribute("data-x");
@@ -2465,31 +2521,6 @@
   });
   document.getElementById("caSlowOff").addEventListener("click", function(){ setSlow(0); });
 
-  /* typing indicator: who is typing right now */
-  function startTypingWatch(user){
-    var seen = {}, first = true;
-    var unsub = db.collection("typing").onSnapshot(function(snap){
-      if(first){ if(!(snap.metadata && snap.metadata.fromCache)) first = false; return; }
-      snap.docChanges().forEach(function(ch){
-        if(ch.type === "removed") delete seen[ch.doc.id];
-        else seen[ch.doc.id] = ch.doc.data().typing ? Date.now() : 0;
-      });
-      paint();
-    }, function(e){ console.error(e); });
-    function paint(){
-      var el = document.getElementById("typingText");
-      if(!el) return;
-      var now = Date.now();
-      var names = Object.keys(seen).filter(function(n){ return n !== user.username && seen[n] && now - seen[n] < 4500; });
-      el.textContent = names.length === 0 ? "" :
-        names.length === 1 ? names[0] + " is typing..." :
-        names.length === 2 ? names[0] + " and " + names[1] + " are typing..." :
-        "several people are typing...";
-    }
-    var timer = setInterval(paint, 1000);
-    return function(){ unsub(); clearInterval(timer); };
-  }
-
   /* ---------- matrix rain switch (off by default) ---------- */
   var rainBtn = document.getElementById("rainToggle"), rainState = false;
   try{ rainState = localStorage.getItem("dt_rain") === "on"; }catch(e){}
@@ -2502,13 +2533,15 @@
   rainBtn.addEventListener("click", function(){ setRain(!rainState); });
   setRain(rainState);
 
-  /* ---------- chat notifications + unread counter ---------- */
+  /* ---------- chat notifications, @mentions, unread counter ---------- */
   var NOTE_KEY = "dt_chatnotif", READ_KEY = "dt_chat_lastread", NOTE_MS = 5000;
-  var notesOn = true, lastRead = 0, feedReady = false, newestSeen = 0, lastList = [], heldNotes = [];
+  var notesOn = true, lastRead = 0, feedReady = false, baseFromCache = false, newestSeen = 0, lastList = [], heldNotes = [];
   try{ notesOn = localStorage.getItem(NOTE_KEY) !== "off"; }catch(e){}
   try{ lastRead = Number(localStorage.getItem(READ_KEY)) || 0; }catch(e){}
   var noteStack = document.getElementById("noteStack"), chatBadge = document.getElementById("chatBadge"),
-      noteBtn = document.getElementById("noteToggle");
+      noteBtn = document.getElementById("noteToggle"), gamePlayerEl = document.getElementById("gamePlayer");
+  var avatarOf = {};   /* username -> profile picture (picked up from chat messages and the online list) */
+  var PERSON_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>';
 
   function tsMs(m){
     var t = m && m.ts;
@@ -2518,6 +2551,34 @@
     return Number(t) || 0;
   }
   function chatOnScreen(){ return viewChat.classList.contains("active") && !document.hidden; }
+  function gameOpen(){ return !!(gamePlayerEl && gamePlayerEl.classList.contains("show")); }
+  function myName(){ var u = currentUser(); return u && u.username ? String(u.username) : ""; }
+  function myAvatar(){ var u = currentUser(); return u && typeof u.avatar === "string" ? u.avatar : ""; }
+  function isPic(v){ return typeof v === "string" && /^(data:image\/|https?:\/\/)/i.test(v); }
+  function setPic(el, v){ el.style.backgroundImage = 'url("' + String(v).replace(/"/g, "%22") + '")'; }
+  function picFor(name){ return avatarOf[name] || (name && name === myName() ? myAvatar() : ""); }
+  function rememberAvatars(list){
+    list.forEach(function(m){ if(m && m.username && isPic(m.avatar)) avatarOf[m.username] = m.avatar; });
+  }
+
+  /* does this text @mention that name? ("@seb hi" yes, "@sebastian" no, "me@seb.com" no) */
+  function mentionsName(text, name){
+    if(!text || !name) return false;
+    var t = String(text).toLowerCase(), n = "@" + String(name).toLowerCase(), i = t.indexOf(n);
+    while(i > -1){
+      var before = i ? t.charAt(i - 1) : "", after = t.charAt(i + n.length);
+      if(!/[a-z0-9_]/.test(before) && !/[a-z0-9_]/.test(after)) return true;
+      i = t.indexOf(n, i + 1);
+    }
+    return false;
+  }
+  /* colours @names inside a message (the text is already HTML-escaped) */
+  function markMentions(html, me){
+    return html.replace(/(^|[^a-zA-Z0-9_&;])@([^\s@<>&]{1,32})/g, function(all, pre, nm){
+      return pre + '<span class="mtag' + (me && mentionsName("@" + nm, me) ? " me" : "") + '">@' + nm + '</span>';
+    });
+  }
+
   function setUnread(n){
     if(!chatBadge) return;
     chatBadge.textContent = n > 9 ? "9+" : String(n);
@@ -2540,28 +2601,33 @@
     clearNotes();
   }
   function noteReset(){
-    feedReady = false; newestSeen = 0; lastList = []; heldNotes = [];
+    feedReady = false; baseFromCache = false; newestSeen = 0; lastList = []; heldNotes = [];
     setUnread(0); clearNotes();
   }
   /* called with every live update of the chat messages */
   function noteFeed(snap, list, fromCache, user){
-    if(fromCache) return;                 /* wait for the real server data */
     lastList = list;
+    rememberAvatars(list);
     var newest = 0;
     list.forEach(function(m){ var t = tsMs(m); if(t > newest) newest = t; });
-    if(!feedReady){                       /* first load: no popups, just count what you missed */
-      feedReady = true;
+    if(!feedReady){
+      /* the first data we get (saved copy or server) is the starting point: no popups for it */
+      feedReady = true; baseFromCache = fromCache;
       if(!lastRead && newest){ lastRead = newest; try{ localStorage.setItem(READ_KEY, String(newest)); }catch(e){} }
       newestSeen = newest;
       if(chatOnScreen()) markRead(); else countUnread();
       return;
     }
+    /* first server data after the saved copy can hold messages sent while you were away: no popups for old ones */
+    var catchUp = baseFromCache && !fromCache;
+    if(!fromCache) baseFromCache = false;
     var fresh = [];
     snap.docChanges().forEach(function(ch){
       if(ch.type !== "added") return;
       var m = ch.doc.data(); m.id = ch.doc.id;
       var t = tsMs(m);
       if(!t || t <= newestSeen) return;   /* an older message scrolling back into the list, not a new one */
+      if(catchUp && t < Date.now() - 120000) return;
       if(m.username === user.username) return;
       m._t = t; fresh.push(m);
     });
@@ -2571,15 +2637,28 @@
   }
 
   function showNote(m){
-    if(!notesOn || chatOnScreen() || !noteStack) return;
-    var gp = document.getElementById("gamePlayer");
-    if(gp && gp.classList.contains("show")) return;   /* don't pop up over a game */
-    if(document.hidden){                               /* tab in the background: show them when you come back */
+    m._mention = mentionsName(m.text, myName());
+    if(chatOnScreen() || !noteStack) return;
+    if(!notesOn && !m._mention) return;           /* @mentions still come through when notifications are off */
+    if(gameOpen() && !m._mention) return;         /* don't pop up over a game (mentions wait until you close it) */
+    if(document.hidden || gameOpen()){
       heldNotes.push(m);
       if(heldNotes.length > 3) heldNotes.shift();
       return;
     }
     buildNote(m);
+  }
+  function flushHeld(){
+    if(document.hidden || gameOpen()) return;
+    if(chatOnScreen()){ heldNotes = []; return; }
+    var held = heldNotes; heldNotes = [];
+    held.forEach(function(m){ if(notesOn || m._mention) buildNote(m); });
+  }
+  function ago(t){
+    var sec = (Date.now() - t) / 1000;
+    if(!t || sec < 60) return "just now";
+    if(sec < 3600) return Math.floor(sec / 60) + "m ago";
+    return Math.floor(sec / 3600) + "h ago";
   }
   function liveNotes(){
     return noteStack ? Array.prototype.filter.call(noteStack.children, function(c){ return !c._gone; }) : [];
@@ -2603,18 +2682,17 @@
     if(live.length >= 3) dismissNote(live[0]);
 
     var n = document.createElement("button");
-    n.type = "button"; n.className = "note";
-    n.setAttribute("aria-label", "new message from " + (m.username || "someone") + ", click to open chat");
+    n.type = "button"; n.className = "note" + (m._mention ? " mention" : "");
+    n.setAttribute("aria-label", (m._mention ? "you were mentioned by " : "new message from ") + (m.username || "someone") + ", click to open chat");
 
     var av = document.createElement("span"); av.className = "noteav";
-    var pic = typeof m.avatar === "string" ? m.avatar : "";
-    if(/^(data:image\/|https?:\/\/)/i.test(pic)) av.style.backgroundImage = 'url("' + pic.replace(/"/g, "%22") + '")';
-    else av.textContent = String(m.username || "?").charAt(0);
+    var pic = isPic(m.avatar) ? m.avatar : picFor(m.username);
+    if(pic) setPic(av, pic); else av.textContent = String(m.username || "?").charAt(0);
 
     var body = document.createElement("span"); body.className = "notebody";
     var top = document.createElement("span"); top.className = "notetop";
     var who = document.createElement("span"); who.className = "notewho"; who.textContent = m.username || "someone";
-    var when = document.createElement("span"); when.className = "notewhen"; when.textContent = "just now";
+    var when = document.createElement("span"); when.className = "notewhen"; when.textContent = m._mention ? "mentioned you" : ago(m._t);
     top.appendChild(who); top.appendChild(when);
 
     var txt = document.createElement("span"); txt.className = "notetext";
@@ -2648,62 +2726,271 @@
   document.addEventListener("visibilitychange", function(){
     if(document.hidden) return;
     if(chatOnScreen()){ if(feedReady) markRead(); return; }
-    var held = heldNotes; heldNotes = [];
-    held.forEach(buildNote);
+    flushHeld();
   });
+  /* when a game closes, show any @mentions that came in while you were playing */
+  if(gamePlayerEl && window.MutationObserver){
+    new MutationObserver(function(){ if(!gameOpen()) flushHeld(); }).observe(gamePlayerEl, {attributes:true, attributeFilter:["class"]});
+  }
 
   function paintNoteBtn(){ if(noteBtn) noteBtn.textContent = notesOn ? "On  (click to turn off)" : "Off  (click to turn on)"; }
   if(noteBtn) noteBtn.addEventListener("click", function(){
     notesOn = !notesOn;
     try{ localStorage.setItem(NOTE_KEY, notesOn ? "on" : "off"); }catch(e){}
-    if(!notesOn){ heldNotes = []; clearNotes(); }
+    if(!notesOn){ heldNotes = heldNotes.filter(function(m){ return m._mention; }); liveNotes().forEach(function(n){ if(!n.classList.contains("mention")) dismissNote(n, true); }); }
     paintNoteBtn();
     toast(notesOn ? "chat notifications on" : "chat notifications off");
   });
   paintNoteBtn();
 
-  /* ---------- online counter (top right): each open page checks in with the server ---------- */
+  /* ---------- @mention suggestions while typing in chat ---------- */
+  var mbox = document.getElementById("mentionBox"), mbItems = [], mbIndex = 0;
+  function knownNames(){
+    var me = myName(), seen = {}, out = [];
+    function add(n, live){
+      if(!n || n === me || /^guest\d+$/i.test(n)) return;
+      if(seen[n]){ if(live) seen[n].live = true; return; }
+      seen[n] = {name: n, live: !!live}; out.push(seen[n]);
+    }
+    onlinePeople.forEach(function(p){ if(!p.guest) add(p.name, true); });
+    for(var i = lastList.length - 1; i >= 0; i--) add(lastList[i].username, false);
+    return out;
+  }
+  function mentionQuery(input){
+    var pos = typeof input.selectionStart === "number" ? input.selectionStart : input.value.length;
+    var m = /(^|\s)@([^\s@]{0,32})$/.exec(input.value.slice(0, pos));
+    return m ? {start: pos - m[2].length - 1, end: pos, q: m[2].toLowerCase()} : null;
+  }
+  function hideMentionBox(){ if(mbox){ mbox.hidden = true; mbox.innerHTML = ""; } mbItems = []; }
+  function paintMentionBox(input){
+    mbox.innerHTML = "";
+    var hint = document.createElement("div"); hint.className = "mbhint"; hint.textContent = "pick someone to mention";
+    mbox.appendChild(hint);
+    mbItems.forEach(function(p, i){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "mbopt" + (i === mbIndex ? " on" : "");
+      var av = document.createElement("span"); av.className = "opav" + (p.live ? " live" : "");
+      var pic = picFor(p.name);
+      if(pic) setPic(av, pic); else av.textContent = p.name.charAt(0);
+      var nm = document.createElement("span"); nm.className = "opname"; nm.textContent = p.name;
+      b.appendChild(av); b.appendChild(nm);
+      if(p.live){ var sm = document.createElement("small"); sm.textContent = "online"; b.appendChild(sm); }
+      b.addEventListener("mousedown", function(e){ e.preventDefault(); });   /* keep the typing box focused */
+      b.addEventListener("click", function(){ pickMention(i, input); });
+      mbox.appendChild(b);
+    });
+    var r = input.getBoundingClientRect();
+    mbox.style.left = Math.max(8, r.left) + "px";
+    mbox.style.bottom = (window.innerHeight - r.top + 8) + "px";
+    mbox.style.width = Math.min(Math.max(r.width, 220), 320, window.innerWidth - 16) + "px";
+    mbox.hidden = false;
+  }
+  function updateMentionBox(input){
+    if(!mbox) return;
+    var mq = mentionQuery(input);
+    if(!mq){ hideMentionBox(); return; }
+    var all = knownNames(), starts = [], contains = [];
+    all.forEach(function(p){
+      var low = p.name.toLowerCase(), at = low.indexOf(mq.q);
+      if(at === 0) starts.push(p); else if(at > 0) contains.push(p);
+    });
+    var list = starts.concat(contains);
+    list.sort(function(a, b){ return (b.live ? 1 : 0) - (a.live ? 1 : 0); });
+    mbItems = list.slice(0, 6);
+    if(!mbItems.length){ hideMentionBox(); return; }
+    mbIndex = 0;
+    paintMentionBox(input);
+  }
+  function pickMention(i, input){
+    var p = mbItems[i], mq = p && mentionQuery(input);
+    if(!mq){ hideMentionBox(); return; }
+    var v = input.value;
+    input.value = v.slice(0, mq.start) + "@" + p.name + " " + v.slice(mq.end);
+    var caret = mq.start + p.name.length + 2;
+    try{ input.setSelectionRange(caret, caret); }catch(e){}
+    input.focus();
+    hideMentionBox();
+  }
+  chatScreen.addEventListener("input", function(e){ if(e.target && e.target.id === "msgInput") updateMentionBox(e.target); });
+  chatScreen.addEventListener("keydown", function(e){
+    if(!e.target || e.target.id !== "msgInput" || !mbox || mbox.hidden || !mbItems.length) return;
+    if(e.key === "ArrowDown" || e.key === "ArrowUp"){
+      e.preventDefault(); e.stopPropagation();
+      mbIndex = (mbIndex + (e.key === "ArrowDown" ? 1 : -1) + mbItems.length) % mbItems.length;
+      paintMentionBox(e.target);
+    } else if(e.key === "Enter" || e.key === "Tab"){
+      e.preventDefault(); e.stopPropagation();       /* picks the name instead of sending */
+      pickMention(mbIndex, e.target);
+    } else if(e.key === "Escape" && !e.defaultPrevented){
+      hideMentionBox();
+    }
+  }, true);
+  chatScreen.addEventListener("focusout", function(e){ if(e.target && e.target.id === "msgInput") setTimeout(hideMentionBox, 150); });
+  window.addEventListener("resize", hideMentionBox);
+
+  /* puts "@name " in the chat box (used by the online list) */
+  function mentionInChat(name){
+    tabChat.click();
+    setTimeout(function(){
+      var input = document.getElementById("msgInput");
+      if(!input || !input.offsetParent) return;      /* not logged in to chat */
+      var v = input.value, tag = "@" + name + " ";
+      input.value = v && !/\s$/.test(v) ? v + " " + tag : v + tag;
+      input.focus();
+      try{ input.setSelectionRange(input.value.length, input.value.length); }catch(e){}
+    }, 80);
+  }
+
+  /* ---------- online counter + who's online (top right): each open page checks in with the server ---------- */
+  var onlinePeople = [], onlineYou = "", onlineKick = null, visitorId = "";
+  function onlineNudge(){ if(onlineKick) onlineKick(); }
   (function onlineCounter(){
-    var pill = document.getElementById("onlinePill"), num = document.getElementById("onlineNum");
-    if(!pill || !num || !window.fetch) return;
+    var pill = document.getElementById("onlinePill"), num = document.getElementById("onlineNum"),
+        panel = document.getElementById("onlinePanel"), listEl = document.getElementById("onlineList"),
+        headCount = document.getElementById("onlineHeadCount");
+    if(!pill || !num || !panel || !window.fetch) return;
     var id = "";
     try{ id = localStorage.getItem("dt_vid") || ""; }catch(e){}
     if(!/^[a-z0-9]{8,40}$/.test(id)){
       id = (Date.now().toString(36) + Math.random().toString(36).slice(2, 12)).replace(/[^a-z0-9]/g, "");
       try{ localStorage.setItem("dt_vid", id); }catch(e){}
     }
-    var timer = null, fails = 0, unsupported = false;
+    visitorId = id;
+    var timer = null, fails = 0, unsupported = false, asked = {};
+
     function show(n){
       n = Math.max(1, Math.floor(Number(n) || 1));
       num.textContent = n > 999 ? "999+" : String(n);
-      var label = n === 1 ? "1 person on Dark Terminal right now" : n + " people on Dark Terminal right now";
+      var label = (n === 1 ? "1 person" : n + " people") + " on Dark Terminal right now, click to see who";
       pill.setAttribute("data-tip", label);
       pill.setAttribute("aria-label", label);
       if(pill.hidden){ pill.hidden = false; document.body.classList.add("has-online"); }
     }
-    function hide(){ pill.hidden = true; document.body.classList.remove("has-online"); }
+    function hide(){ pill.hidden = true; document.body.classList.remove("has-online"); closePanel(); }
+    function take(j){
+      if(Array.isArray(j.people)) onlinePeople = j.people.filter(function(p){ return p && typeof p.name === "string" && p.name; });
+      onlineYou = typeof j.you === "string" ? j.you : "";
+      show(j.online);
+      if(!panel.hidden) renderPanel();
+    }
     function ping(){
-      fetch("/api/online", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id:id}), cache:"no-store"})
+      fetch("/api/online", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id:id, name:myName()}), cache:"no-store"})
         .then(function(r){
           if(r.status === 404){ unsupported = true; clearTimeout(timer); hide(); return null; }  /* server.js not updated yet */
           if(!r.ok) throw new Error("status " + r.status);
           return r.json();
         })
-        .then(function(j){ if(j && typeof j.online === "number"){ fails = 0; show(j.online); } })
+        .then(function(j){ if(j && typeof j.online === "number"){ fails = 0; take(j); } })
         .catch(function(){ if(++fails >= 3) hide(); });
     }
     function loop(){
       clearTimeout(timer);
       if(unsupported) return;
       ping();
-      timer = setTimeout(loop, 30000);
+      timer = setTimeout(loop, panel.hidden ? 30000 : 10000);   /* faster while the list is open */
     }
+    onlineKick = loop;
+
+    function renderPanel(){
+      var people = onlinePeople.slice().sort(function(a, b){ return (b.name === onlineYou ? 1 : 0) - (a.name === onlineYou ? 1 : 0); });
+      headCount.textContent = people.length === 1 ? "1 person" : people.length + " people";
+      listEl.innerHTML = "";
+      people.forEach(function(p){
+        var you = p.name === onlineYou, canMention = !p.guest && !you;
+        var row = document.createElement(canMention ? "button" : "div");
+        if(canMention) row.type = "button";
+        row.className = "oprow" + (p.guest ? " guest" : "");
+        var av = document.createElement("span"); av.className = "opav live";
+        if(p.guest) av.innerHTML = PERSON_SVG;                       /* guests: no profile picture */
+        else { var pic = picFor(p.name); if(pic) setPic(av, pic); else av.textContent = p.name.charAt(0); }
+        var nm = document.createElement("span"); nm.className = "opname"; nm.textContent = p.name;
+        row.appendChild(av); row.appendChild(nm);
+        if(you){ var y = document.createElement("span"); y.className = "opyou"; y.textContent = "(you)"; row.appendChild(y); }
+        if(canMention){
+          var at = document.createElement("span"); at.className = "opat"; at.textContent = "@"; row.appendChild(at);
+          row.setAttribute("data-tip", "mention " + p.name + " in chat");
+          row.addEventListener("click", function(){ closePanel(); mentionInChat(p.name); });
+        }
+        listEl.appendChild(row);
+      });
+      fetchMissingAvatars();
+    }
+    /* profile pictures for people who haven't chatted lately: asks Firebase for just the picture */
+    function fetchMissingAvatars(){
+      if(!useCloud || !FIREBASE_CONFIG.projectId || !FIREBASE_CONFIG.apiKey) return;
+      onlinePeople.forEach(function(p){
+        if(p.guest || picFor(p.name) || asked[p.name]) return;
+        asked[p.name] = true;
+        var url = "https://firestore.googleapis.com/v1/projects/" + encodeURIComponent(FIREBASE_CONFIG.projectId) +
+          "/databases/(default)/documents/users/" + encodeURIComponent(p.name) +
+          "?mask.fieldPaths=avatar&key=" + encodeURIComponent(FIREBASE_CONFIG.apiKey);
+        fetch(url).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+          var v = j && j.fields && j.fields.avatar && j.fields.avatar.stringValue;
+          if(isPic(v)){ avatarOf[p.name] = v; if(!panel.hidden) renderPanel(); }
+        }).catch(function(){});
+      });
+    }
+    function openPanel(){ panel.hidden = false; pill.setAttribute("aria-expanded", "true"); renderPanel(); loop(); }
+    function closePanel(){ if(panel.hidden) return; panel.hidden = true; pill.setAttribute("aria-expanded", "false"); }
+    pill.addEventListener("click", function(){ if(panel.hidden) openPanel(); else closePanel(); });
+    document.addEventListener("mousedown", function(e){ if(!panel.hidden && !panel.contains(e.target) && !pill.contains(e.target)) closePanel(); });
+    document.addEventListener("keydown", function(e){ if(e.key === "Escape" && !e.defaultPrevented) closePanel(); });
+
     document.addEventListener("visibilitychange", function(){ if(!document.hidden) loop(); });
     window.addEventListener("pagehide", function(){
       if(unsupported || !navigator.sendBeacon) return;
       try{ navigator.sendBeacon("/api/online", new Blob([JSON.stringify({id:id, leave:true})], {type:"application/json"})); }catch(e){}
     });
     loop();
+  })();
+
+  /* ---------- typing indicator: goes through the server, and only while the Chat tab is open ---------- */
+  (function typingWatch(){
+    var lastKeyAt = 0, sentState = false, timer = null, unsupported = false;
+    function inputEl(){ return document.getElementById("msgInput"); }
+    function active(){ var el = inputEl(); return chatOnScreen() && !!myName() && !!el && !!el.offsetParent; }
+    function amTyping(){ var el = inputEl(); return active() && !!el.value.trim() && Date.now() - lastKeyAt < 4000; }
+    function paint(names){
+      var el = document.getElementById("typingText");
+      if(!el) return;
+      var me = myName();
+      names = (names || []).filter(function(n){ return n && n !== me; });
+      el.textContent = names.length === 0 ? "" :
+        names.length === 1 ? names[0] + " is typing..." :
+        names.length === 2 ? names[0] + " and " + names[1] + " are typing..." :
+        "several people are typing...";
+    }
+    function push(){
+      if(unsupported || !visitorId) return;
+      sentState = amTyping();
+      fetch("/api/typing", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id:visitorId, name:myName(), typing:sentState}), cache:"no-store"})
+        .then(function(r){ if(r.status === 404){ unsupported = true; return null; } return r.ok ? r.json() : null; })
+        .then(function(j){ if(j && Array.isArray(j.typing)) paint(active() ? j.typing : []); })
+        .catch(function(){});
+    }
+    function tick(){
+      clearTimeout(timer); timer = null;
+      if(unsupported) return;
+      if(!active()){ if(sentState) push(); paint([]); return; }   /* stops checking until Chat is opened again */
+      push();
+      timer = setTimeout(tick, 1500);
+    }
+    function wake(){ if(!timer) tick(); }
+    chatScreen.addEventListener("input", function(e){
+      if(!e.target || e.target.id !== "msgInput") return;
+      lastKeyAt = Date.now();
+      var now = amTyping();
+      if(now !== sentState) push();          /* started or stopped typing: tell the server right away */
+    });
+    chatScreen.addEventListener("keydown", function(e){
+      if(e.target && e.target.id === "msgInput" && e.key === "Enter") setTimeout(function(){ if(sentState && !amTyping()) push(); }, 30);
+    });
+    chatScreen.addEventListener("click", function(e){
+      if(e.target && e.target.closest && e.target.closest("#msgSend")) setTimeout(function(){ if(sentState && !amTyping()) push(); }, 30);
+    });
+    tabChat.addEventListener("click", function(){ setTimeout(wake, 60); });
+    allTabs.forEach(function(t){ if(t !== tabChat) t.addEventListener("click", function(){ setTimeout(tick, 0); }); });
+    document.addEventListener("visibilitychange", function(){ setTimeout(document.hidden ? tick : wake, 0); });
   })();
 
   /* warm up the chat in the background so opening the Chat tab is instant */
@@ -2719,6 +3006,18 @@
    Want it to pop up again WITHOUT a new version? Add 1 to UPDATE_RESHOW.
    ========================================================== */
 var UPDATE_LOG = [
+  {
+    version: "1.2.0",
+    date: "2026-10-28",
+    title: "@mentions + who's online",
+    changes: [
+      "@mentions: type @ in chat and pick a name from the list. That person always gets a notification, even if they turned chat notifications off, and the message is highlighted for them.",
+      "Who's online: click the online counter in the top-right corner to see everyone on Dark Terminal. People without an account show up as guest1, guest2 and so on.",
+      "Click someone in the online list to @mention them in chat.",
+      "Fixed the typing indicator: it shows up right away (even for short messages), clears when someone stops or sends, and no longer uses up Firebase reads.",
+      "Fixed: after reloading the page, the first new chat message sometimes didn't pop up a notification."
+    ]
+  },
   {
     version: "1.1.0",
     date: "2026-10-27",

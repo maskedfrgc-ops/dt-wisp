@@ -187,31 +187,96 @@ async function handleAi(req, res) {
   }
 }
 
-// ---------- online counter: every open Dark Terminal page checks in here every 30 seconds ----------
-const online = new Map(); // visitor id -> last check-in time
+// ---------- online counter + who's online + typing indicator ----------
+// Every open Dark Terminal page checks in here every 30 seconds (every 1.5 seconds while the Chat tab is open).
+const online = new Map(); // visitor id -> { t: last check-in, name: chat username or "", guest: guest number }
 const ONLINE_WINDOW = 90 * 1000; // counted as online if they checked in within the last 90 seconds
-function onlineCount() {
+const typingNow = new Map(); // chat username -> time they stop counting as "typing"
+
+function cleanName(v) {
+  if (typeof v !== "string") return "";
+  return v.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 32);
+}
+function pruneOnline() {
   const now = Date.now();
-  for (const [id, t] of online) if (now - t > ONLINE_WINDOW) online.delete(id);
-  return online.size;
+  for (const [id, v] of online) if (now - v.t > ONLINE_WINDOW) online.delete(id);
+}
+function freeGuestNumber() {
+  const used = new Set();
+  for (const v of online.values()) if (v.guest) used.add(v.guest);
+  let n = 1;
+  while (used.has(n)) n++;
+  return n;
+}
+// everyone online: chat users first (A-Z, each name once even on two devices), then guest1, guest2...
+function onlinePeople() {
+  pruneOnline();
+  const names = new Set(), guests = [];
+  for (const v of online.values()) {
+    if (v.name) names.add(v.name);
+    else if (v.guest) guests.push(v.guest);
+  }
+  const users = [...names].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  guests.sort((a, b) => a - b);
+  return users.map((name) => ({ name })).concat(guests.map((g) => ({ name: "guest" + g, guest: true })));
+}
+function checkIn(body) {
+  const id = typeof body.id === "string" && /^[a-z0-9]{8,40}$/.test(body.id) ? body.id : "";
+  if (!id) return null;
+  if (body.leave) {
+    online.delete(id);
+    return null;
+  }
+  pruneOnline();
+  let v = online.get(id);
+  if (!v) {
+    if (online.size >= 50000) return null;
+    v = { t: 0, name: "", guest: 0 };
+    online.set(id, v);
+  }
+  v.t = Date.now();
+  v.name = cleanName(body.name);
+  if (v.name) v.guest = 0;
+  else if (!v.guest) v.guest = freeGuestNumber();
+  return v;
+}
+async function readJson(req) {
+  try {
+    return JSON.parse((await readBody(req)) || "{}") || {};
+  } catch (e) {
+    return {};
+  }
+}
+function sendJson(res, obj) {
+  res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
+  res.end(JSON.stringify(obj));
 }
 async function handleOnline(req, res) {
-  const send = (obj) => {
-    res.writeHead(200, { "Content-Type": "application/json", "Cache-Control": "no-store" });
-    res.end(JSON.stringify(obj));
-  };
-  if (req.method === "POST") {
-    let body = {};
-    try {
-      body = JSON.parse((await readBody(req)) || "{}");
-    } catch (e) {}
-    const id = typeof body.id === "string" && /^[a-z0-9]{8,40}$/.test(body.id) ? body.id : "";
-    if (id) {
-      if (body.leave) online.delete(id);
-      else if (online.has(id) || online.size < 50000) online.set(id, Date.now());
-    }
+  let me = null;
+  if (req.method === "POST") me = checkIn(await readJson(req));
+  const people = onlinePeople();
+  sendJson(res, {
+    online: people.length,
+    you: me ? me.name || "guest" + me.guest : "",
+    people: people.slice(0, 300),
+  });
+}
+async function handleTyping(req, res) {
+  if (req.method !== "POST") return sendJson(res, { typing: [] });
+  const body = await readJson(req);
+  const me = checkIn(body); // also keeps them on the online list
+  const name = me ? me.name : "";
+  const now = Date.now();
+  if (name) {
+    if (body.typing === true) typingNow.set(name, now + 5000);
+    else typingNow.delete(name);
   }
-  send({ online: onlineCount() });
+  const list = [];
+  for (const [n, until] of typingNow) {
+    if (until < now) typingNow.delete(n);
+    else if (n !== name) list.push(n);
+  }
+  sendJson(res, { typing: list.slice(0, 10) });
 }
 
 // ---------- game list relay: /gn/<assets|covers|html>/<path> -> jsdelivr (for networks that block the CDN) ----------
@@ -267,8 +332,8 @@ const server = http.createServer((req, res) => {
     handleAi(req, res);
     return;
   }
-  if (urlPath === "/api/online") {
-    handleOnline(req, res).catch(() => {
+  if (urlPath === "/api/online" || urlPath === "/api/typing") {
+    (urlPath === "/api/online" ? handleOnline : handleTyping)(req, res).catch(() => {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end("{}");
     });
